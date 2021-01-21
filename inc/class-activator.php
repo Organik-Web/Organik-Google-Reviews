@@ -2,7 +2,7 @@
 /**
  * This class defines all code necessary to run during the plugin's activation and deactivation behaviour
  */
-class Organik_Services_Activator {
+class Organik_Google_Reviews_Activator {
 
 	/**
 	 * Activation behaviour

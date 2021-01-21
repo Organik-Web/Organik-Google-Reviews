@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 /*
  * Current plugin version
  */
-define( 'ORGNK_SERVICES_VERSION', '1.0.0' );
+define( 'ORGNK_GREVIEWS_VERSION', '1.0.0' );
 
 /**
  * Register activation hook
@@ -48,4 +48,4 @@ require_once plugin_dir_path( __FILE__ ) . 'lib/helpers.php';
 /**
  * Run the main instance of this plugin
  */
-Organik_Services::instance();
+Organik_Google_Reviews::instance();
