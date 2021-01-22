@@ -31,7 +31,7 @@ class Organik_Google_Reviews {
      */
 	public function __construct() {
 
-		// Hook into the 'init' action to add the Custom Post Type
+		// Hook into the 'init' action to add the admin menu item
 		add_action( 'init', array( $this, 'orgnk_greviews_settings_page' ) );
 	}
 

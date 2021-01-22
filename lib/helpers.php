@@ -59,7 +59,7 @@ function orgnk_greviews_get_google_reviews_data() {
 
     $response = array(
         'data'	=> array(),
-        'error' => false,
+        // 'error' => false,
     );
 
     $transient_name = 'orgnk_greviews_' . ORGNK_GREVIEWS_PLACE_ID;
@@ -70,21 +70,21 @@ function orgnk_greviews_get_google_reviews_data() {
 
         $api_data = orgnk_greviews_get_api_data();
 
-        if ( is_wp_error( $api_data ) ) {
+        // if ( is_wp_error( $api_data ) ) {
             
-            $response['error'] = $api_data;
+        //     $response['error'] = $api_data;
 
-        } else {
+        // } else {
 
             if ( wp_remote_retrieve_response_code( $api_data ) === 200 ) {
 
                 $data = json_decode( wp_remote_retrieve_body( $api_data ) );
                 
-                if ( 'OK' !== $data->status ) {
+                // if ( 'OK' !== $data->status ) {
 
-                    $response['error'] = isset( $data->error_message ) ? $data->error_message : 'No reviews found.';
+                //     $response['error'] = isset( $data->error_message ) ? $data->error_message : 'No reviews found.';
 
-                } else {
+                // } else {
 
                     if ( isset( $data->result ) && isset( $data->result->reviews ) ) {
 
@@ -99,14 +99,15 @@ function orgnk_greviews_get_google_reviews_data() {
 
                         set_transient( $transient_name, $response['data'], 24 * MINUTE_IN_SECONDS );
 
-                        $response['error'] = false;
+                        // $response['error'] = false;
 
-                    } else {
-                        $response['error'] = 'This place doesn\'t have any reviews.';
-                    }
-                }
+                    } 
+                    // else {
+                    //     $response['error'] = 'This place doesn\'t have any reviews.';
+                    // }
+                // }
             }
-        }	
+        // }	
     }
 
     return $response;
@@ -120,23 +121,19 @@ function orgnk_greviews_get_google_reviews_data() {
  */
 function orgnk_greviews_parse_reviews( $reviews ) {
 
-    if ( is_wp_error( $reviews['error'] ) ) {
-        return $reviews['error'];
-    }
+    // if ( is_wp_error( $reviews['error'] ) ) {
+    //     return $reviews['error'];
+    // }
 
     if ( empty( $reviews['data'] ) ) {
         return;
     }
 
-    $parsed_reviews = array();
-    $min_rating = esc_html( get_option( 'options_google_reviews_min_rating' ) );
-    $filter_by_min_rating = false;
-
-    $data = $reviews['data']['reviews'];
-
-    if ( $min_rating ) {
-        $filter_by_min_rating = true;
-    }
+    $parsed_reviews         = array();
+    $data                   = $reviews['data']['reviews'];
+    $min_rating             = esc_html( get_option( 'options_orgnk_greviews_min_rating' ) );
+    $word_limit             = esc_html( get_option( 'options_orgnk_greviews_word_limit' ) );
+    $filter_by_min_rating   = ( $min_rating ) ? true : false;
 
     foreach ( $data as $review ) {
 
@@ -154,11 +151,14 @@ function orgnk_greviews_parse_reviews( $reviews ) {
         $review_meta['author_url']                = $review->author_url;
         $review_meta['profile_photo_url']         = $review->profile_photo_url;
         $review_meta['rating']                    = $review->rating;
-        $review_meta['relative_time_description'] = $review->relative_time_description;
         $review_meta['text']                      = $review->text;
         $review_meta['time']                      = $review->time;
-        $review_meta['title']              		  = $review->relative_time_description;
+        $review_meta['relative_time']      		  = $review->relative_time_description;
         $review_meta['review_url']                = $review_url;
+
+        if ( $word_limit ) {
+            $review_meta['text'] = wp_trim_words( $review_meta['text'], $word_limit, '...' );
+        }
 
         if ( $filter_by_min_rating ) {
             if ( $review->rating >= $min_rating ) {
@@ -204,15 +204,15 @@ function orgnk_greviews_get_api_data() {
 
     $response = wp_remote_post( esc_url_raw( $url ), $api_args );
 
-    if ( ! is_wp_error( $response ) ) {
+    // if ( ! is_wp_error( $response ) ) {
 
-        $body = json_decode( wp_remote_retrieve_body( $response ) );
+    //     $body = json_decode( wp_remote_retrieve_body( $response ) );
 
-        if ( isset( $body->error_message ) && ! empty( $body->error_message ) ) {
-            $status = isset( $body->status ) ? $body->status : $source . '_api_error';
-            return new WP_Error( $status, $body->error_message );
-        }
-    }
+    //     if ( isset( $body->error_message ) && ! empty( $body->error_message ) ) {
+    //         $status = isset( $body->status ) ? $body->status : $source . '_api_error';
+    //         return new WP_Error( $status, $body->error_message );
+    //     }
+    // }
 
     return $response;
 }
@@ -233,4 +233,116 @@ function orgnk_greviews_sort_by_rating( $review_1, $review_2 ) {
  */
 function orgnk_greviews_sort_by_time( $review_1, $review_2 ) {
     return strcmp( $review_2['time'], $review_1['time'] );
+}
+
+//=======================================================================================================================================================
+
+function orgnk_greviews_do_rating_stars( $review = NULL, $html_icons = true ) {
+
+    $output         = NULL;
+
+    if ( $review ) {
+        $rating         = (int) $review['rating'];
+        $full_icon      = ( $html_icons ) ? '&#9733;' : '';
+        $empty_icon     = ( $html_icons ) ? '&#9734;' : '';
+
+        for ( $stars = 1; $stars <= 5; $stars++ ) {
+
+            if ( $stars <= $rating ) {
+                $output .= '<i class="star star-full">' . $full_icon . '</i>';
+            } else {
+                $output .= '<i class="star star-empty">' . $empty_icon . '</i>';
+            }
+        }
+    }
+
+	return $output;
+}
+
+
+
+
+
+
+/**
+ * orgnk_greviews_has_reviews()
+ * 
+*/
+function orgnk_greviews_has_reviews() {
+
+    $reviews = orgnk_greviews_get_reviews();
+
+    if ( $reviews ) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+/**
+ * orgnk_greviews_do_reviews_list()
+ * 
+*/
+function orgnk_greviews_do_reviews_list( $display_type = 'list' ) {
+    ob_start();
+    include plugin_dir_path( __FILE__ ) . '../public/reviews-list.php';
+    return ob_get_clean();
+}
+
+/**
+ * orgnk_greviews_do_write_review_button()
+ * 
+ */
+function orgnk_greviews_do_write_review_button( $button_type = 'primary-button', $invert = false ) {
+
+	$output = NULL;
+	$button = maybe_unserialize( get_option( 'options_orgnk_greviews_write_review_link' ) );
+	$color_class = '';
+
+	if ( $invert === true ) {
+		$color_class .= ' white';
+	}
+
+  	// Check a button exists before proceeding
+	if ( $button ) {
+
+		$output .= '<a href="' . esc_url( $button['url'] ) . '" class="' . $button_type . $color_class . '"';
+			
+		if ( $button['target'] ) {
+			$output .= ' target="_blank" rel="noopener"';
+		}
+		
+		$output .= '>' . esc_html( $button['title'] ) . '</a>';
+	}
+
+	return $output; 
+}
+
+/**
+ * orgnk_greviews_do_view_reviews_button()
+ * 
+ */
+function orgnk_greviews_do_view_reviews_button( $button_type = 'primary-button', $invert = false ) {
+
+	$output = NULL;
+	$button = maybe_unserialize( get_option( 'options_orgnk_greviews_view_reviews_link' ) );
+	$color_class = '';
+
+	if ( $invert === true ) {
+		$color_class .= ' white';
+	}
+
+  	// Check a button exists before proceeding
+	if ( $button ) {
+
+		$output .= '<a href="' . esc_url( $button['url'] ) . '" class="' . $button_type . $color_class . '"';
+			
+		if ( $button['target'] ) {
+			$output .= ' target="_blank" rel="noopener"';
+		}
+		
+		$output .= '>' . esc_html( $button['title'] ) . '</a>';
+	}
+
+	return $output; 
 }
