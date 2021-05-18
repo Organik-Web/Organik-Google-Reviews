@@ -16,13 +16,32 @@ function orgnk_greviews_get_api_url() {
 
 //=======================================================================================================================================================
 
-/** 
+/**
+ * orgnk_greviews_get_average_rating()
+ */
+function orgnk_greviews_get_average_rating( $decimal = true ) {
+
+    $average_rating = null;
+    $reviews = orgnk_greviews_get_google_reviews_data();
+
+    if ( isset( $reviews['data']['rating'] ) ) {
+        $average_rating = $reviews['data']['rating'];
+
+        if ( $decimal ) {
+            $average_rating = number_format( $average_rating, 1 );
+        }
+    }
+
+    return $average_rating;
+}
+
+//=======================================================================================================================================================
+
+/**
  * orgnk_greviews_get_reviews()
- * 
  */
 function orgnk_greviews_get_reviews() {
 
-    $reviews = array();
     $reviews = orgnk_greviews_get_google_reviews_data();
     $reviews = orgnk_greviews_parse_reviews( $reviews );
     $sort_by = esc_html( get_option( 'options_orgnk_greviews_sort' ) );
@@ -59,55 +78,38 @@ function orgnk_greviews_get_google_reviews_data() {
 
     $response = array(
         'data'	=> array(),
-        // 'error' => false,
     );
 
     $transient_name = 'orgnk_greviews_' . ORGNK_GREVIEWS_PLACE_ID;
 
     $response['data'] = get_transient( $transient_name );
-    
+
     if ( empty( $response['data'] ) ) {
 
         $api_data = orgnk_greviews_get_api_data();
 
-        // if ( is_wp_error( $api_data ) ) {
-            
-        //     $response['error'] = $api_data;
+        if ( wp_remote_retrieve_response_code( $api_data ) === 200 ) {
 
-        // } else {
+            $data = json_decode( wp_remote_retrieve_body( $api_data ) );
 
-            if ( wp_remote_retrieve_response_code( $api_data ) === 200 ) {
+            if ( isset( $data->result ) && isset( $data->result->reviews ) ) {
 
-                $data = json_decode( wp_remote_retrieve_body( $api_data ) );
-                
-                // if ( 'OK' !== $data->status ) {
+                $response['data'] = array(
+                    'reviews'   => $data->result->reviews,
+                    'location'  => array(),
+                );
 
-                //     $response['error'] = isset( $data->error_message ) ? $data->error_message : 'No reviews found.';
+                if ( isset( $data->result->geometry->location ) ) {
+                    $response['data']['location'] = $data->result->geometry->location;
+                }
 
-                // } else {
+                if ( isset( $data->result->rating ) ) {
+                    $response['data']['rating'] = $data->result->rating;
+                }
 
-                    if ( isset( $data->result ) && isset( $data->result->reviews ) ) {
-
-                        $response['data'] = array(
-                            'reviews' => $data->result->reviews,
-                            'location' => array(),
-                        );
-
-                        if ( isset( $data->result->geometry->location ) ) {
-                            $response['data']['location'] = $data->result->geometry->location;
-                        }
-
-                        set_transient( $transient_name, $response['data'], 24 * MINUTE_IN_SECONDS );
-
-                        // $response['error'] = false;
-
-                    } 
-                    // else {
-                    //     $response['error'] = 'This place doesn\'t have any reviews.';
-                    // }
-                // }
+                set_transient( $transient_name, $response['data'], 1 * MINUTE_IN_SECONDS );
             }
-        // }	
+        }
     }
 
     return $response;
@@ -117,13 +119,8 @@ function orgnk_greviews_get_google_reviews_data() {
 
 /**
  * orgnk_greviews_parse_reviews()
- * Change the number of 'posts per page' for the CPT archive
  */
 function orgnk_greviews_parse_reviews( $reviews ) {
-
-    // if ( is_wp_error( $reviews['error'] ) ) {
-    //     return $reviews['error'];
-    // }
 
     if ( empty( $reviews['data'] ) ) {
         return;
@@ -176,15 +173,15 @@ function orgnk_greviews_parse_reviews( $reviews ) {
 
 function orgnk_greviews_get_api_data() {
 
-    $api_args = array(
+    $api_args   = array(
         'method'		=> 'POST',
         'timeout'		=> 60,
         'httpversion'	=> '1.0',
         'sslverify'		=> false,
     );
 
-    $api_key = ORGNK_GREVIEWS_API_KEY;
-    $place_id = ORGNK_GREVIEWS_PLACE_ID;
+    $api_key    = ORGNK_GREVIEWS_API_KEY;
+    $place_id   = ORGNK_GREVIEWS_PLACE_ID;
 
     if ( empty( $api_key ) ) {
         return new WP_Error( 'missing_api_key', 'To display Google Reviews, you need to setup an API key.' );
@@ -203,16 +200,6 @@ function orgnk_greviews_get_api_data() {
     );
 
     $response = wp_remote_post( esc_url_raw( $url ), $api_args );
-
-    // if ( ! is_wp_error( $response ) ) {
-
-    //     $body = json_decode( wp_remote_retrieve_body( $response ) );
-
-    //     if ( isset( $body->error_message ) && ! empty( $body->error_message ) ) {
-    //         $status = isset( $body->status ) ? $body->status : $source . '_api_error';
-    //         return new WP_Error( $status, $body->error_message );
-    //     }
-    // }
 
     return $response;
 }
@@ -237,9 +224,9 @@ function orgnk_greviews_sort_by_time( $review_1, $review_2 ) {
 
 //=======================================================================================================================================================
 
-function orgnk_greviews_do_rating_stars( $review = NULL, $html_icons = true ) {
+function orgnk_greviews_do_rating_stars( $review = null, $html_icons = true ) {
 
-    $output         = NULL;
+    $output = null;
 
     if ( $review ) {
         $rating         = (int) $review['rating'];
@@ -259,14 +246,10 @@ function orgnk_greviews_do_rating_stars( $review = NULL, $html_icons = true ) {
 	return $output;
 }
 
-
-
-
-
+//=======================================================================================================================================================
 
 /**
  * orgnk_greviews_has_reviews()
- * 
 */
 function orgnk_greviews_has_reviews() {
 
@@ -279,19 +262,22 @@ function orgnk_greviews_has_reviews() {
     }
 }
 
+//=======================================================================================================================================================
+
 /**
  * orgnk_greviews_do_reviews_list()
- * 
 */
-function orgnk_greviews_do_reviews_list( $display_type = 'list' ) {
+function orgnk_greviews_do_reviews_list( $display_type = 'list', $slider_navigation = 'dots' ) {
     ob_start();
     include plugin_dir_path( __FILE__ ) . '../public/reviews-list.php';
     return ob_get_clean();
 }
 
+//=======================================================================================================================================================
+
 /**
  * orgnk_greviews_do_write_review_button()
- * 
+ *
  */
 function orgnk_greviews_do_write_review_button( $button_type = 'primary-button', $invert = false ) {
 
@@ -307,20 +293,22 @@ function orgnk_greviews_do_write_review_button( $button_type = 'primary-button',
 	if ( $button ) {
 
 		$output .= '<a href="' . esc_url( $button['url'] ) . '" class="' . $button_type . $color_class . '"';
-			
+
 		if ( $button['target'] ) {
 			$output .= ' target="_blank" rel="noopener"';
 		}
-		
+
 		$output .= '>' . esc_html( $button['title'] ) . '</a>';
 	}
 
-	return $output; 
+	return $output;
 }
+
+//=======================================================================================================================================================
 
 /**
  * orgnk_greviews_do_view_reviews_button()
- * 
+ *
  */
 function orgnk_greviews_do_view_reviews_button( $button_type = 'primary-button', $invert = false ) {
 
@@ -336,13 +324,13 @@ function orgnk_greviews_do_view_reviews_button( $button_type = 'primary-button',
 	if ( $button ) {
 
 		$output .= '<a href="' . esc_url( $button['url'] ) . '" class="' . $button_type . $color_class . '"';
-			
+
 		if ( $button['target'] ) {
 			$output .= ' target="_blank" rel="noopener"';
 		}
-		
+
 		$output .= '>' . esc_html( $button['title'] ) . '</a>';
 	}
 
-	return $output; 
+	return $output;
 }

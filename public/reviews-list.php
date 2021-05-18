@@ -1,15 +1,16 @@
 <?php
 // Get reviews data
-$reviews = orgnk_greviews_get_reviews();
-$review_class = 'review';
-$review_class .= ( $display_type === 'slider' ) ? ' splide__slide' : '';
-
-// if ( is_wp_error( $reviews ) ) return;
+$reviews            = orgnk_greviews_get_reviews();
+$list_class         = 'reviews-list';
+$list_class         .= ( $display_type === 'slider' ) ? ' splide' : null;
+$list_class         .= ( $display_type === 'slider' && $slider_navigation === 'dots' ) ? ' splide-dot-pagination' : ' splide-button-pagination';
+$review_class       = 'review';
+$review_class       .= ( $display_type === 'slider' ) ? ' splide__slide' : '';
 
 if ( $reviews ) : ?>
 
     <div class="orgnk-greviews type-<?php echo $display_type ?>">
-        <div class="reviews-list<?php echo ( $display_type === 'slider' ) ? ' splide splide-dot-pagination' : '' ?>">
+        <div class="<?php echo $list_class ?>">
 
             <?php
             // Add wrappers for Splide slider
@@ -40,7 +41,7 @@ if ( $reviews ) : ?>
                                 <?php endif ?>
 
                                 <div class="attribution">
-                                    <span class="name"><?php echo $review['author_name']; ?></span>
+                                    <span class="name"><?php echo ucwords( $review['author_name'] ) ?></span>
                                     <span class="relative-time"><?php echo $review['relative_time'] ?></span>
                                 </div>
                             </div>
@@ -59,4 +60,4 @@ if ( $reviews ) : ?>
         </div>
     </div>
 
-<?php endif; 
+<?php endif;
