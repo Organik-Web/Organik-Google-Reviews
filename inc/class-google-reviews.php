@@ -35,7 +35,7 @@ class Organik_Google_Reviews {
 		add_action( 'init', array( $this, 'orgnk_greviews_settings_page' ) );
 
 		// Register ACF Fields
-		new Organik_Google_Reviews_Populate_ACF();
+		new Organik_Google_Reviews_ACF_Fields();
 	}
 
 	/**
