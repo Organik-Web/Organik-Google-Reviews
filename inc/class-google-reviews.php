@@ -25,7 +25,7 @@ class Organik_Google_Reviews {
         }
         return self::$instance;
 	}
-	
+
 	/**
      * Constructor function
      */
@@ -33,6 +33,9 @@ class Organik_Google_Reviews {
 
 		// Hook into the 'init' action to add the admin menu item
 		add_action( 'init', array( $this, 'orgnk_greviews_settings_page' ) );
+
+		// Register ACF Fields
+		new Organik_Google_Reviews_Populate_ACF();
 	}
 
 	/**
@@ -42,7 +45,7 @@ class Organik_Google_Reviews {
 	public function orgnk_greviews_settings_page() {
 
 		if ( function_exists( 'acf_add_options_page' ) ) {
-		
+
 			acf_add_options_page( array(
 				'page_title'		=> 'Google Reviews Settings',
 				'menu_title'		=> 'Google Reviews',
