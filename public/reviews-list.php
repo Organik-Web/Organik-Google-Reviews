@@ -36,7 +36,7 @@ if ( $reviews ) : ?>
 
                                 <?php if ( $review['profile_photo_url'] ) : ?>
                                     <div class="avatar">
-                                        <img src="<?php echo $review['profile_photo_url'] ?>" width="100" height="100" alt="<?php echo $review['author_name'] ?>" />
+                                        <img src="<?php echo $review['profile_photo_url'] ?>" width="100" height="100" alt="<?php echo $review['author_name'] ?>" loading="lazy"/>
                                     </div>
                                 <?php endif ?>
 
