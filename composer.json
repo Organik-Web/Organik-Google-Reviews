@@ -1,0 +1,16 @@
+{
+    "name": "organikweb/google-reviews",
+    "description": "Display a businesses Google Reviews",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "Organik Web",
+            "email": "hello@organikweb.com.au"
+        }
+    ],
+    "require": {},
+    "extra": {
+        "installer-name": "orgnk-google-reviews"
+    }
+}
